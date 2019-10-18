@@ -31,3 +31,4 @@ Examples/ROS/SD-SLAM/RGBD
 .vscode/
 trajectory_ROS/
 trajectory_ROS.yaml
+sequences/

@@ -98,6 +98,10 @@ class Config {
   static std::string BaseFrame() { return GetInstance().kBaseFrame_; }
   static std::string CameraFrame() { return GetInstance().kCameraFrame_; }
 
+  static std::string pose_file() { return GetInstance().pose_file_; }
+  static std::string predicted_pose_file() { return GetInstance().predicted_pose_file_; }
+  static std::string imu_predicted_pose_file() { return GetInstance().imu_predicted_pose_file_; }
+
  private:
   Config();
 
@@ -132,6 +136,11 @@ class Config {
   std::string kIMUTopic_;
   std::string kBaseFrame_;
   std::string kCameraFrame_;
+
+  // Path to save sequences (debug)
+  std::string pose_file_;
+  std::string predicted_pose_file_;
+  std::string imu_predicted_pose_file_;
 };
 
 }  // namespace SD_SLAM

@@ -67,6 +67,10 @@ Config::Config() {
 
   kBaseFrame_ = "odom";
   kCameraFrame_ = "camera_link";
+
+  pose_file_ = "./sequences/pose.txt";
+  predicted_pose_file_ = "./sequences/predicted_pose.txt";
+  imu_predicted_pose_file_ = "./sequences/imu_predicted_pose.txt";
 }
 
 bool Config::ReadParameters(std::string filename) {
@@ -128,6 +132,11 @@ bool Config::ReadParameters(std::string filename) {
   if (fs["ROS.BaseFrame"].isNamed()) fs["ROS.BaseFrame"] >> kBaseFrame_;
   if (fs["ROS.CameraFrame"].isNamed()) fs["ROS.CameraFrame"] >> kCameraFrame_;
 
+  // Paths for save poses
+  if (fs["Pose.Final"].isNamed()) fs["Pose.Final"] >> pose_file_;
+  if (fs["Pose.Predicted"].isNamed()) fs["Pose.Predicted"] >> predicted_pose_file_;
+  if (fs["Pose.IMU_predicted"].isNamed()) fs["Pose.IMU_predicted"] >> imu_predicted_pose_file_;
+  
   fs.release();
 
   return true;
