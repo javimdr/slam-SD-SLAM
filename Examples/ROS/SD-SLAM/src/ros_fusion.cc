@@ -37,11 +37,14 @@
 #include "ui/Viewer.h"
 #include "ui/FrameDrawer.h"
 #include "ui/MapDrawer.h"
+#include "debug_tools/seq_dumper.h"
 
 using namespace std;
 
 class ImageReader {
  public:
+  ros::Time timestamp = ros::Time(0);
+
   ImageReader() {
     channels_ = 0;
     updated_ = false;
@@ -57,6 +60,8 @@ class ImageReader {
       return;
     }
 
+    timestamp = msgIMU->header.stamp;
+
     vector<double> imu;
     imu.push_back(msgIMU->angular_velocity.x);
     imu.push_back(msgIMU->angular_velocity.y);
@@ -64,6 +69,7 @@ class ImageReader {
     imu.push_back(msgIMU->linear_acceleration.x);
     imu.push_back(msgIMU->linear_acceleration.y);
     imu.push_back(msgIMU->linear_acceleration.z);
+    imu.push_back(timestamp.toSec());
 
     ROS_INFO("Read new %dx%d image", cv_ptrRGB->image.cols, cv_ptrRGB->image.rows);
 
@@ -161,6 +167,12 @@ int main(int argc, char **argv) {
   message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub, imu_sub);
   sync.registerCallback(boost::bind(&ImageReader::ReadRGBIMU, &reader, _1, _2));
 
+  // Create files to dump poses
+  std::cout << "FILENAME: " << config.pose_file() << std::endl;
+  create_file(config.pose_file());
+  create_file(config.predicted_pose_file());
+  create_file(config.imu_predicted_pose_file());
+
   ros::Rate r(30);
   while (ros::ok() && !SLAM.StopRequested()) {
     if (reader.HasNewImage()) {
@@ -177,6 +189,10 @@ int main(int argc, char **argv) {
 
       // Show world pose
       ShowPose(pose);
+
+      // Dump pose to file 
+      std::cout << "[TIMESTAMP] " << setprecision(19) << reader.timestamp.toSec() << std::endl;
+      dump_pose(config.pose_file(), reader.timestamp.toSec(), pose);
 
       // Set data to UI
       fdrawer->Update(im, pose, tracker);

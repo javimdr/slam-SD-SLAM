@@ -100,6 +100,7 @@ LIST(APPEND SOURCEFILES
 
   # Debug tools
   src/debug_tools/seq_dumper.cc
+  src/debug_tools/AuxiliarMotionModel.cc
 )
 
 if(NOT USE_ANDROID AND USE_PANGOLIN)

@@ -34,6 +34,8 @@
 #include "extra/log.h"
 #include "sensors/ConstantVelocity.h"
 #include "sensors/IMU.h"
+#include "debug_tools/seq_dumper.h"
+#include "debug_tools/AuxiliarMotionModel.h"
 
 using namespace std;
 
@@ -136,6 +138,9 @@ Tracking::Tracking(System *pSys, Map *pMap, const int sensor):
   else
     sensor_model = new ConstantVelocity();
   motion_model_ = new EKF(sensor_model);
+
+  // Set auxiliar motion model
+  aux_motion_model_ = new AuxiliarMotionModel(60);
 }
 
 Eigen::Matrix4d Tracking::GrabImageRGBD(const cv::Mat &im, const cv::Mat &imD, const std::string filename) {
@@ -219,11 +224,13 @@ void Tracking::Track() {
         if (!bOK) {
           bOK = TrackReferenceKeyFrame();
           motion_model_->Restart();
+          aux_motion_model_->restart();
         }
       }
     } else {
       bOK = Relocalization();
       motion_model_->Restart();
+      aux_motion_model_->restart();
     }
 
     mCurrentFrame.mpReferenceKF = mpReferenceKF;
@@ -241,11 +248,13 @@ void Tracking::Track() {
     if (bOK) {
 
       // Update motion sensor
-      if (!mLastFrame.GetPose().isZero())
+      if (!mLastFrame.GetPose().isZero()){
         motion_model_->Update(mCurrentFrame.GetPose(), measurements_);
-      else
+        aux_motion_model_->update(mCurrentFrame.GetPose(), measurements_);
+      }else{
         motion_model_->Restart();
-
+        aux_motion_model_->restart();
+      }
       // Clean VO matches
       for (int i = 0; i<mCurrentFrame.N; i++) {
         MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
@@ -660,6 +669,14 @@ bool Tracking::TrackWithMotionModel() {
   // Predict initial pose with motion model
   Eigen::Matrix4d predicted_pose = motion_model_->Predict(mLastFrame.GetPose());
   mCurrentFrame.SetPose(predicted_pose);
+
+  // Predict pose with IMU model
+  Eigen::Matrix4d aux_predicted_pose = aux_motion_model_->predict_pose(mLastFrame.GetPose());
+
+  // Dump poses
+  double timestamp = measurements_[6]; 
+  dump_pose(Config::predicted_pose_file(), timestamp, predicted_pose);
+  dump_pose(Config::imu_predicted_pose_file(), timestamp, aux_predicted_pose);
 
   LOGD("Predicted pose: [%.4f, %.4f, %.4f]", predicted_pose(0, 3), predicted_pose(1, 3), predicted_pose(2, 3));
 
@@ -1124,6 +1141,7 @@ void Tracking::Reset() {
 
   lastRelativePose_.setZero();
   motion_model_->Restart();
+  aux_motion_model_->restart();
 }
 
 void Tracking::InformOnlyTracking(const bool &flag) {

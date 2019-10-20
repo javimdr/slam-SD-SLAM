@@ -40,6 +40,7 @@
 #include "PatternDetector.h"
 #include "System.h"
 #include "sensors/EKF.h"
+#include "debug_tools/AuxiliarMotionModel.h"
 
 namespace SD_SLAM {
 
@@ -200,6 +201,8 @@ class Tracking {
   // Sensor model
   EKF* motion_model_;
   std::vector<double> measurements_;
+  // Sensor model to test
+  AuxiliarMotionModel* aux_motion_model_;
 
   std::list<MapPoint*> mlpTemporalPoints;
   int threshold_;
